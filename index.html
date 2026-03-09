@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen"/>
+  <meta name="apple-mobile-web-app-title" content="Dino Fun"/>
+  <title>Dino Fun 🦕</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    body {
+      background: linear-gradient(135deg, #2D5016, #4A7C2F);
+      font-family: sans-serif;
+      transition: background 0.5s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Jungle leaf decorations */
+    .leaf {
+      position: fixed;
+      pointer-events: none;
+      font-size: 12vw;
+      opacity: 0.15;
+      animation: sway ease-in-out infinite;
+    }
+    @keyframes sway {
+      0%,100% { transform: rotate(-8deg) scale(1); }
+      50%      { transform: rotate(8deg) scale(1.05); }
+    }
+
+    /* Floating bubbles */
+    .bubble {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.2;
+      animation: floatUp linear infinite;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(110vh); opacity: 0.2; }
+      100% { transform: translateY(-20vh); opacity: 0; }
+    }
+
+    /* Footprint trail */
+    .footprint {
+      position: fixed;
+      pointer-events: none;
+      font-size: 6vw;
+      opacity: 0;
+      animation: footFade 1.2s ease-out forwards;
+      z-index: 10;
+    }
+    @keyframes footFade {
+      0%   { opacity: 0.7; transform: translate(-50%,-50%) scale(0.5) rotate(var(--rot)); }
+      100% { opacity: 0;   transform: translate(-50%,-50%) scale(1.2) rotate(var(--rot)); }
+    }
+
+    /* Stage */
+    #stage {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+
+    /* Ground */
+    #ground {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 18vw;
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,0.25));
+      pointer-events: none;
+    }
+
+    /* Dino emoji */
+    #dino-emoji {
+      font-size: 40vw;
+      line-height: 1;
+      filter: drop-shadow(0 12px 40px rgba(0,0,0,0.35));
+      animation: dinoIdle 2.5s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+    @keyframes dinoIdle {
+      0%,100% { transform: translateY(0) rotate(-2deg) scaleX(1); }
+      25%      { transform: translateY(-4vw) rotate(2deg) scaleX(1); }
+      50%      { transform: translateY(-2vw) rotate(0deg) scaleX(1); }
+      75%      { transform: translateY(-5vw) rotate(-3deg) scaleX(1); }
+    }
+
+    /* Dino name */
+    #dino-name {
+      font-size: 8.5vw;
+      font-weight: 900;
+      color: white;
+      text-shadow: 0 3px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(0,0,0,0.25);
+      letter-spacing: 0.04em;
+      margin-top: 3vw;
+      text-align: center;
+      padding: 0 4vw;
+      line-height: 1.2;
+    }
+    .name-in {
+      animation: nameIn 0.45s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes nameIn {
+      0%   { transform: scale(0.4) translateY(15px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    /* Fun fact label */
+    #dino-fact {
+      font-size: 4.2vw;
+      color: rgba(255,255,255,0.82);
+      margin-top: 2vw;
+      text-align: center;
+      padding: 0 6vw;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .fact-in {
+      animation: factIn 0.5s ease-out 0.15s both;
+    }
+    @keyframes factIn {
+      0%   { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Hint */
+    #hint {
+      position: fixed; bottom: 10vw; width: 100%;
+      text-align: center; font-size: 5.5vw;
+      color: rgba(255,255,255,0.75); font-weight: 800;
+      letter-spacing: 0.05em;
+      animation: pulse 1.8s ease-in-out infinite;
+      transition: opacity 0.5s;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 0.75; transform: scale(1); }
+      50%      { opacity: 1; transform: scale(1.06); }
+    }
+
+    /* Burst */
+    .burst {
+      position: fixed; pointer-events: none;
+      font-size: 7vw;
+      animation: burstOut 0.75s ease-out forwards;
+      z-index: 99;
+    }
+    @keyframes burstOut {
+      0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 1; }
+      100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.5); opacity: 0; }
+    }
+
+    /* Bounce */
+    .bounce {
+      animation: bigBounce 0.55s cubic-bezier(.34,1.56,.64,1) !important;
+    }
+    @keyframes bigBounce {
+      0%   { transform: scale(1) rotate(-2deg); }
+      30%  { transform: scale(1.3) rotate(10deg); }
+      60%  { transform: scale(0.88) rotate(-6deg); }
+      100% { transform: scale(1) rotate(-2deg); }
+    }
+
+    /* ROAR flash */
+    #flash {
+      position: fixed; inset: 0;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.08s;
+      z-index: 50;
+    }
+    #flash.on { opacity: 0.3; transition: opacity 0s; }
+
+    /* ROAR text */
+    #roar {
+      position: fixed;
+      top: 10vw; left: 50%;
+      transform: translateX(-50%);
+      font-size: 14vw; font-weight: 900;
+      color: white;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 60;
+      letter-spacing: 0.05em;
+    }
+    .roar-in {
+      animation: roarPop 0.9s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    @keyframes roarPop {
+      0%   { opacity: 0; transform: translateX(-50%) scale(0.3); }
+      30%  { opacity: 1; transform: translateX(-50%) scale(1.2); }
+      70%  { opacity: 1; transform: translateX(-50%) scale(0.95); }
+      100% { opacity: 0; transform: translateX(-50%) scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="flash"></div>
+  <div id="roar">🦖 ROAR!</div>
+  <div id="ground"></div>
+
+  <!-- Leaf decorations -->
+  <div class="leaf" style="top:-2vw;left:-3vw;animation-duration:4s;animation-delay:0s">🌿</div>
+  <div class="leaf" style="top:-2vw;right:-3vw;animation-duration:5s;animation-delay:1s;transform:scaleX(-1)">🌿</div>
+  <div class="leaf" style="bottom:10vw;left:-4vw;animation-duration:6s;animation-delay:2s">🍃</div>
+  <div class="leaf" style="bottom:10vw;right:-4vw;animation-duration:4.5s;animation-delay:0.5s;transform:scaleX(-1)">🍃</div>
+  <div class="leaf" style="top:20vw;left:-5vw;animation-duration:7s;animation-delay:1.5s">🌴</div>
+  <div class="leaf" style="top:20vw;right:-5vw;animation-duration:5.5s;animation-delay:3s;transform:scaleX(-1)">🌴</div>
+
+  <div id="stage">
+    <div id="dino-emoji">🦕</div>
+    <div id="dino-name">KHỦNG LONG CỔ DÀI</div>
+    <div id="dino-fact">Con khủng long hiền lành nhất 🌿</div>
+  </div>
+
+  <div id="hint">👆 Chạm để gặp khủng long!</div>
+
+<script>
+  const DINOS = [
+    {
+      emoji: "🦕", name: "KHỦNG LONG CỔ DÀI",
+      fact: "Con khủng long hiền lành nhất 🌿",
+      sound: 180, roar: "🦕 Hiii!",
+      bg: ["#2D5016","#6BCB77"],
+    },
+    {
+      emoji: "🦖", name: "T-REX",
+      fact: "Vua của các loài khủng long! 👑",
+      sound: 100, roar: "🦖 ROAR!",
+      bg: ["#7B2D00","#FF6B35"],
+    },
+    {
+      emoji: "🐉", name: "RỒNG KHỦNG LONG",
+      fact: "Phun lửa siêu ngầu! 🔥",
+      sound: 130, roar: "🔥 ROAR!",
+      bg: ["#4A0080","#C77DFF"],
+    },
+    {
+      emoji: "🦎", name: "KHỦNG LONG NHỎ",
+      fact: "Chạy nhanh như gió! 💨",
+      sound: 320, roar: "💨 Vút!",
+      bg: ["#005C4B","#00B894"],
+    },
+    {
+      emoji: "🐊", name: "CÁ SẤU KHỔNG LỒ",
+      fact: "Họ hàng xa của khủng long! 🌊",
+      sound: 90, roar: "🐊 SNAP!",
+      bg: ["#1A3A2A","#52B788"],
+    },
+    {
+      emoji: "🦕", name: "BRACHIOSAURUS",
+      fact: "Cổ dài tới tận mây xanh! ☁️",
+      sound: 160, roar: "🌿 Ăn lá!",
+      bg: ["#1B4332","#74C69D"],
+    },
+    {
+      emoji: "🦖", name: "SPINOSAURUS",
+      fact: "Khủng long lớn nhất từng sống! 🌊",
+      sound: 85, roar: "🦖 GRRRR!",
+      bg: ["#023E58","#48CAE4"],
+    },
+    {
+      emoji: "🐲", name: "PTERODACTYL",
+      fact: "Khủng long biết bay! 🪶",
+      sound: 420, roar: "🪶 Screech!",
+      bg: ["#1A1A2E","#7B2FBE"],
+    },
+    {
+      emoji: "🦎", name: "VELOCIRAPTOR",
+      fact: "Thông minh và nhanh nhẹn! 🧠",
+      sound: 280, roar: "⚡ Snap!",
+      bg: ["#3D0000","#E63946"],
+    },
+    {
+      emoji: "🦕", name: "STEGOSAURUS",
+      fact: "Có gai nhọn trên lưng! 🔺",
+      sound: 200, roar: "🌿 Hiền thôi!",
+      bg: ["#344E41","#A3B18A"],
+    },
+    {
+      emoji: "🦖", name: "TRICERATOPS",
+      fact: "Ba cái sừng siêu멋! 🦏",
+      sound: 140, roar: "🦏 Charge!",
+      bg: ["#4A1942","#C77DFF"],
+    },
+    {
+      emoji: "🐉", name: "ANKYLOSAURUS",
+      fact: "Có áo giáp cứng nhất! 🛡️",
+      sound: 110, roar: "🛡️ Bum!",
+      bg: ["#1C3144","#3A86FF"],
+    },
+  ];
+
+  const BURST_EMOJIS = ["🦴","⭐","🌟","✨","💥","🔥","🦕","🦖","💫","🍃"];
+
+  let currentIdx = 0;
+  let audioCtx = null;
+  let lastTap = 0;
+
+  function getAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function playDinoSound(freq, type = 'sawtooth') {
+    try {
+      const ctx = getAudio();
+      // Low rumble + roar effect
+      const osc  = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const gain2= ctx.createGain();
+
+      osc.connect(gain);   gain.connect(ctx.destination);
+      osc2.connect(gain2); gain2.connect(ctx.destination);
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.5, ctx.currentTime + 0.5);
+      gain.gain.setValueAtTime(0.28, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(freq * 1.5, ctx.currentTime);
+      osc2.frequency.exponentialRampToValueAtTime(freq * 0.8, ctx.currentTime + 0.3);
+      gain2.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+
+      osc.start(ctx.currentTime);   osc.stop(ctx.currentTime + 0.6);
+      osc2.start(ctx.currentTime);  osc2.stop(ctx.currentTime + 0.4);
+    } catch(e) {}
+  }
+
+  function makeBubbles() {
+    const colors = ["#6BCB77","#FFD93D","#FF6B35","#48CAE4","#C77DFF","#74C69D"];
+    for (let i = 0; i < 10; i++) {
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      const size = 6 + Math.random() * 14;
+      b.style.cssText = `
+        width:${size}vw;height:${size}vw;
+        left:${Math.random()*100}vw;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        animation-duration:${6+Math.random()*10}s;
+        animation-delay:${Math.random()*8}s;
+      `;
+      document.body.appendChild(b);
+    }
+  }
+
+  function spawnBurst(x, y) {
+    for (let i = 0; i < 8; i++) {
+      const el = document.createElement('div');
+      el.className = 'burst';
+      el.textContent = BURST_EMOJIS[Math.floor(Math.random() * BURST_EMOJIS.length)];
+      const angle = (Math.PI * 2 / 8) * i + Math.random() * 0.3;
+      const dist = 16 + Math.random() * 20;
+      el.style.cssText = `
+        left:${x}px;top:${y}px;
+        --dx:${Math.cos(angle)*dist}vw;
+        --dy:${Math.sin(angle)*dist}vw;
+        animation-delay:${Math.random()*0.08}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 850);
+    }
+  }
+
+  function spawnFootprint(x, y) {
+    const fp = document.createElement('div');
+    fp.className = 'footprint';
+    fp.textContent = '🐾';
+    fp.style.cssText = `left:${x}px;top:${y}px;--rot:${Math.random()*40-20}deg;`;
+    document.body.appendChild(fp);
+    setTimeout(() => fp.remove(), 1300);
+  }
+
+  function showDino(idx) {
+    const d = DINOS[idx];
+    const emojiEl = document.getElementById('dino-emoji');
+    const nameEl  = document.getElementById('dino-name');
+    const factEl  = document.getElementById('dino-fact');
+    const roarEl  = document.getElementById('roar');
+
+    emojiEl.textContent = d.emoji;
+    nameEl.textContent  = d.name;
+    factEl.textContent  = d.fact;
+
+    document.body.style.background =
+      `linear-gradient(135deg, ${d.bg[0]}, ${d.bg[1]})`;
+
+    // Animate name
+    nameEl.className = '';
+    nameEl.offsetHeight;
+    nameEl.className = 'name-in';
+
+    // Animate fact
+    factEl.className = '';
+    factEl.offsetHeight;
+    factEl.className = 'fact-in';
+
+    // Bounce emoji
+    emojiEl.classList.remove('bounce');
+    emojiEl.offsetHeight;
+    emojiEl.classList.add('bounce');
+    setTimeout(() => emojiEl.classList.remove('bounce'), 700);
+
+    // Roar text
+    roarEl.textContent = d.roar;
+    roarEl.className = '';
+    roarEl.offsetHeight;
+    roarEl.className = 'roar-in';
+
+    playDinoSound(d.sound);
+  }
+
+  function flash(color) {
+    const f = document.getElementById('flash');
+    f.style.background = color;
+    f.classList.add('on');
+    setTimeout(() => f.classList.remove('on'), 90);
+  }
+
+  function onTap(e) {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - lastTap < 250) return;
+    lastTap = now;
+
+    const touch = e.touches ? e.touches[0] : e;
+    const x = touch ? touch.clientX : window.innerWidth / 2;
+    const y = touch ? touch.clientY : window.innerHeight / 2;
+
+    currentIdx = (currentIdx + 1) % DINOS.length;
+    showDino(currentIdx);
+    spawnBurst(x, y);
+    spawnFootprint(x, y);
+    flash(DINOS[currentIdx].bg[1]);
+
+    document.getElementById('hint').style.opacity = '0';
+  }
+
+  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('selectstart', e => e.preventDefault());
+  document.addEventListener('touchstart', onTap, { passive: false });
+  document.addEventListener('mousedown', onTap);
+
+  makeBubbles();
+  showDino(0);
+</script>
+</body>
+</html>
